@@ -55,7 +55,7 @@ public class ResizeTransformer extends Transformer {
      */
     @Override
     public boolean isViewAtRight() {
-        return getView().getRight() + getMarginRight() >= getParentView().getWidth();
+        return getView().getRight() + getMarginRight() == getParentView().getWidth();
     }
 
     /**
@@ -64,7 +64,7 @@ public class ResizeTransformer extends Transformer {
      */
     @Override
     public boolean isViewAtBottom() {
-        return getView().getBottom() + getMarginBottom() >= getParentView().getHeight();
+        return getView().getBottom() + getMarginBottom() == getParentView().getHeight();
     }
 
     /**

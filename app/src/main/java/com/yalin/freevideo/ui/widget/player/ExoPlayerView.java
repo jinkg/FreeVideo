@@ -3,6 +3,7 @@ package com.yalin.freevideo.ui.widget.player;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.res.TypedArray;
+import android.support.v4.view.MotionEventCompat;
 import android.util.AttributeSet;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -253,13 +254,16 @@ public class ExoPlayerView extends FrameLayout {
 
     @Override
     public boolean onTouchEvent(MotionEvent ev) {
-        if (!useController || player == null || ev.getActionMasked() != MotionEvent.ACTION_DOWN) {
+        if (!useController || player == null) {
             return false;
         }
-        if (controller.isVisible()) {
-            controller.hide();
-        } else {
-            maybeShowController(true);
+        int action = MotionEventCompat.getActionMasked(ev);
+        if (action == MotionEvent.ACTION_UP) {
+            if (controller.isVisible()) {
+                controller.hide();
+            } else {
+                maybeShowController(true);
+            }
         }
         return true;
     }
