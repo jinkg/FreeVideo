@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.yalin.freevideo.ui.widget.dragview.DraggableView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/draggable_view"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/theme_accent_1"
+    app:bottom_view_id="@+id/iv_thumbnail"
+    app:enable_minimized_horizontal_alpha_effect="false"
+    app:top_view_height="200dp"
+    app:top_view_id="@+id/player_view"
+    app:top_view_margin_bottom="10dp"
+    app:top_view_margin_right="10dp"
+    app:top_view_resize="true"
+    app:top_view_x_scale_factor="2.3"
+    app:top_view_y_scale_factor="2.3">
+
+    <ImageView
+        android:id="@+id/iv_thumbnail"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@+id/dragView"
+        android:focusable="true" />
+
+    <com.yalin.freevideo.ui.widget.player.ExoPlayerView
+        android:id="@id/player_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@android:color/black"
+        android:focusable="true" />
+
+</com.yalin.freevideo.ui.widget.dragview.DraggableView>

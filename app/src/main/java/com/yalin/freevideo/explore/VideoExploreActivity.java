@@ -6,15 +6,25 @@ import android.view.Menu;
 import android.view.MenuItem;
 
 import com.yalin.freevideo.R;
+import com.yalin.freevideo.explore.data.MovieData;
 import com.yalin.freevideo.navigation.NavigationModel;
+import com.yalin.freevideo.player.VideoPlayerFragment;
 import com.yalin.freevideo.ui.BaseActivity;
 
 public class VideoExploreActivity extends BaseActivity implements Toolbar.OnMenuItemClickListener {
+
+    private VideoPlayerFragment mVideoPlayerFragment;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_video_explore);
+
+        mVideoPlayerFragment = (VideoPlayerFragment) getFragmentManager()
+                .findFragmentById(R.id.explore_video_player);
+        getFragmentManager().beginTransaction()
+                .hide(mVideoPlayerFragment)
+                .commit();
     }
 
     @Override
@@ -41,5 +51,9 @@ public class VideoExploreActivity extends BaseActivity implements Toolbar.OnMenu
                 break;
         }
         return false;
+    }
+
+    public void playVideo(MovieData movieData) {
+        mVideoPlayerFragment.playVideo(movieData);
     }
 }

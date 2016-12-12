@@ -1,10 +1,6 @@
 package com.yalin.freevideo.explore.data;
 
-import android.content.Context;
-import android.content.Intent;
 import android.net.Uri;
-
-import com.yalin.freevideo.player.PlayerActivity;
 
 /**
  * YaLin
@@ -40,10 +36,7 @@ public class MovieData {
         return mTimeLong;
     }
 
-    public Intent buildIntent(Context context) {
-        Intent intent = new Intent(context, PlayerActivity.class);
-        intent.setData(Uri.parse(mVideoUri))
-                .setAction(PlayerActivity.ACTION_VIEW);
-        return intent;
+    public Uri getVideoUri() {
+        return Uri.parse(mVideoUri);
     }
 }

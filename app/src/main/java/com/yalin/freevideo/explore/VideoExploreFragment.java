@@ -128,6 +128,7 @@ public class VideoExploreFragment extends Fragment
 
         private final ImageLoader mImageLoader;
 
+
         private List mItems;
 
         public VideoAdapter(@NonNull Activity activity,
@@ -159,7 +160,9 @@ public class VideoExploreFragment extends Fragment
                     final int position = holder.getAdapterPosition();
                     if (position == RecyclerView.NO_POSITION) return;
                     final MovieData movieData = (MovieData) mItems.get(position);
-                    mHost.startActivity(movieData.buildIntent(mHost));
+                    if (mHost instanceof VideoExploreActivity) {
+                        ((VideoExploreActivity) mHost).playVideo(movieData);
+                    }
                 }
             });
             return holder;

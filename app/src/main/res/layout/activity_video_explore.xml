@@ -8,29 +8,43 @@
     android:fitsSystemWindows="true"
     tools:context="com.yalin.freevideo.explore.VideoExploreActivity">
 
-    <android.support.design.widget.CoordinatorLayout
-        android:id="@+id/coordinator_layout"
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <android.support.design.widget.AppBarLayout
-            android:id="@+id/appbar"
+        <android.support.design.widget.CoordinatorLayout
+            android:id="@+id/coordinator_layout"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@color/background">
+            android:layout_height="match_parent">
 
-            <include layout="@layout/toolbar_autohide" />
+            <android.support.design.widget.AppBarLayout
+                android:id="@+id/appbar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@color/background">
 
-        </android.support.design.widget.AppBarLayout>
+                <include layout="@layout/toolbar_autohide" />
+
+            </android.support.design.widget.AppBarLayout>
+
+
+            <fragment
+                android:id="@+id/explore_video_frag"
+                android:name="com.yalin.freevideo.explore.VideoExploreFragment"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                app:layout_behavior="@string/appbar_scrolling_view_behavior" />
+
+
+        </android.support.design.widget.CoordinatorLayout>
 
         <fragment
-            android:id="@+id/explore_library_frag"
-            android:name="com.yalin.freevideo.explore.VideoExploreFragment"
+            android:id="@+id/explore_video_player"
+            android:name="com.yalin.freevideo.player.VideoPlayerFragment"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            app:layout_behavior="@string/appbar_scrolling_view_behavior" />
+            android:layout_height="match_parent" />
 
-    </android.support.design.widget.CoordinatorLayout>
+    </FrameLayout>
 
     <include layout="@layout/navigation_view" />
 </android.support.v4.widget.DrawerLayout>
