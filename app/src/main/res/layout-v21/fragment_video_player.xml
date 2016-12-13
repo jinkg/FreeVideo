@@ -7,7 +7,7 @@
     app:bottomViewId="@+id/player_detail"
     app:enableMinimizedHorizontalAlphaEffect="false"
     app:topViewHeight="@dimen/video_player_draggable_height"
-    app:topViewId="@+id/player_view"
+    app:topViewId="@+id/player_card_view"
     app:topViewMarginBottom="@dimen/spacing_normal"
     app:topViewMarginRight="@dimen/spacing_normal"
     app:topViewResize="true">
@@ -16,7 +16,7 @@
         android:id="@+id/player_detail"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_below="@+id/player_view"
+        android:layout_below="@+id/player_card_view"
         android:background="@android:color/white"
         android:orientation="vertical">
 
@@ -33,11 +33,21 @@
             android:text="全屏" />
     </LinearLayout>
 
-    <com.google.android.exoplayer2.ui.SimpleExoPlayerView
-        android:id="@id/player_view"
+    <android.support.v7.widget.CardView
+        android:id="@+id/player_card_view"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="@android:color/black"
-        android:focusable="true" />
+        android:layout_height="wrap_content"
+        app:cardBackgroundColor="@android:color/black"
+        app:cardCornerRadius="@dimen/movie_card_corner_radius"
+        app:cardElevation="@dimen/video_player_card_elevation">
+
+        <com.google.android.exoplayer2.ui.SimpleExoPlayerView
+            android:id="@id/player_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@android:color/black"
+            android:focusable="true" />
+    </android.support.v7.widget.CardView>
+
 
 </com.yalin.freevideo.ui.widget.dragview.DraggableView>
