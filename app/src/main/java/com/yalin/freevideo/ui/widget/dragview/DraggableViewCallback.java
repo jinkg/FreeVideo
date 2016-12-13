@@ -1,7 +1,6 @@
 package com.yalin.freevideo.ui.widget.dragview;
 
 import android.support.v4.widget.ViewDragHelper;
-import android.util.Log;
 import android.view.View;
 
 /**
@@ -14,7 +13,7 @@ import android.view.View;
 public class DraggableViewCallback extends ViewDragHelper.Callback {
 
     private static final int MINIMUM_DX_FOR_HORIZONTAL_DRAG = 15;
-    private static final int MINIMUM_DY_FOR_VERTICAL_DRAG = 5;
+    private static final int MINIMUM_DY_FOR_VERTICAL_DRAG = 2;
     private static final float X_MIN_VELOCITY = 1500;
     private static final float Y_MIN_VELOCITY = 1000;
 

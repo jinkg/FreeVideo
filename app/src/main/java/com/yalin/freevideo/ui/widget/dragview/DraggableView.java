@@ -410,14 +410,19 @@ public class DraggableView extends RelativeLayout {
                 event.getY(), event.getMetaState());
     }
 
+    @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+    }
+
     /**
      * Override method to configure the dragged view and secondView layout properly.
      */
     @Override
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
-        if (isInEditMode())
+        if (isInEditMode()) {
             super.onLayout(changed, left, top, right, bottom);
-        else if (isDragViewAtTop()) {
+        } else if (isDragViewAtTop()) {
             dragView.layout(left, top, right, transformer.getOriginalHeight());
             secondView.layout(left, transformer.getOriginalHeight(), right, bottom);
             dragView.setY(top);
@@ -510,7 +515,11 @@ public class DraggableView extends RelativeLayout {
      * Modify the second view alpha based on dragged view vertical position.
      */
     void changeSecondViewAlpha() {
-        secondView.setAlpha(1 - getVerticalDragOffset());
+        float alpha = 1.5f * (1 - getVerticalDragOffset());
+        if (alpha > 1) {
+            alpha = 1;
+        }
+        secondView.setAlpha(alpha);
     }
 
     /**
