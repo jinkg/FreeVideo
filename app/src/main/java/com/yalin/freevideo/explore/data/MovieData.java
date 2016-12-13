@@ -1,6 +1,11 @@
 package com.yalin.freevideo.explore.data;
 
+import android.app.Activity;
+import android.content.Intent;
 import android.net.Uri;
+import android.text.TextUtils;
+
+import com.yalin.freevideo.player.PlayerActivity;
 
 /**
  * YaLin
@@ -18,6 +23,11 @@ public class MovieData {
         this.mMovieName = movieName;
         this.mCoverUrl = coverUrl;
         this.mTimeLong = timeLong;
+    }
+
+    public MovieData(String movieName, String coverUrl, long timeLong, String videoUri) {
+        this(movieName, coverUrl, timeLong);
+        mVideoUri = videoUri;
     }
 
     public void setVideoUri(String videoUri) {
@@ -38,5 +48,20 @@ public class MovieData {
 
     public Uri getVideoUri() {
         return Uri.parse(mVideoUri);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof MovieData) {
+            return TextUtils.equals(mVideoUri, ((MovieData) obj).mVideoUri);
+        }
+        return super.equals(obj);
+    }
+
+    public Intent buildPlayIntent(Activity activity) {
+        Intent intent = new Intent(activity, PlayerActivity.class);
+        intent.setData(Uri.parse(mVideoUri));
+        intent.setAction(PlayerActivity.ACTION_VIEW);
+        return intent;
     }
 }

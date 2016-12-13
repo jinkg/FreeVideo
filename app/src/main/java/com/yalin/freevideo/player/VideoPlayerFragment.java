@@ -106,6 +106,7 @@ public class VideoPlayerFragment extends Fragment implements View.OnClickListene
         mDraggableView = (DraggableView) root.findViewById(R.id.draggable_view);
         mDraggableView.setDraggableListener(mDraggableListener);
         mDraggableView.setClickToMaximizeEnabled(true);
+        root.findViewById(R.id.full_screen).setOnClickListener(this);
         initPlayerView(root);
         return root;
     }
@@ -143,12 +144,18 @@ public class VideoPlayerFragment extends Fragment implements View.OnClickListene
     }
 
     public void playVideo(MovieData movieData) {
-        getFragmentManager().beginTransaction()
-                .show(this)
-                .commit();
+        if (!isVisible()) {
+            getFragmentManager().beginTransaction()
+                    .show(this)
+                    .addToBackStack(null)
+                    .commit();
+        }
         mDraggableView.maximize();
+        if (mCurrentPlayData != null && mCurrentPlayData.equals(movieData)) {
+            return;
+        }
         mCurrentPlayData = movieData;
-
+        releasePlayer();
         initializePlayer();
     }
 
@@ -200,7 +207,7 @@ public class VideoPlayerFragment extends Fragment implements View.OnClickListene
             return;
         }
         if (mPlayer == null) {
-            boolean preferExtensionDecoders = false;
+            boolean preferExtensionDecoders = true;
             DrmSessionManager<FrameworkMediaCrypto> drmSessionManager = null;
 
             mEventLogger = new EventLogger();
@@ -354,7 +361,13 @@ public class VideoPlayerFragment extends Fragment implements View.OnClickListene
 
     @Override
     public void onClick(View v) {
-
+        switch (v.getId()) {
+            case R.id.full_screen:
+                if (mCurrentPlayData != null) {
+                    startActivity(mCurrentPlayData.buildPlayIntent(getActivity()));
+                }
+                break;
+        }
     }
 
     @Override

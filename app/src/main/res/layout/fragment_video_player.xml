@@ -4,7 +4,7 @@
     android:id="@+id/draggable_view"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    app:bottomViewId="@+id/iv_thumbnail"
+    app:bottomViewId="@+id/player_detail"
     app:enableMinimizedHorizontalAlphaEffect="false"
     app:topViewHeight="@dimen/video_player_draggable_height"
     app:topViewId="@+id/player_card_view"
@@ -12,14 +12,26 @@
     app:topViewMarginRight="@dimen/spacing_normal"
     app:topViewResize="true">
 
-    <TextView
-        android:id="@+id/iv_thumbnail"
+    <LinearLayout
+        android:id="@+id/player_detail"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_below="@+id/player_card_view"
         android:background="@android:color/white"
-        android:focusable="true"
-        android:text="是复赛地方哈斯的粉红色的i飞洒\n地方很死的速度放缓i\n撒地方很阿斯顿因为人请问驱蚊器华威桥" />
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:focusable="true"
+            android:text="是复赛地方哈斯的粉红色的i飞洒\n地方很死的速度放缓i\n撒地方很阿斯顿因为人请问驱蚊器华威桥" />
+
+        <Button
+            android:id="@+id/full_screen"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="全屏" />
+    </LinearLayout>
 
     <android.support.v7.widget.CardView
         android:id="@+id/player_card_view"
