@@ -56,4 +56,11 @@ public class VideoExploreActivity extends BaseActivity implements Toolbar.OnMenu
     public void playVideo(MovieData movieData) {
         mVideoPlayerFragment.playVideo(movieData);
     }
+
+    @Override
+    public void onBackPressed() {
+        if (!mVideoPlayerFragment.handleBackPress()) {
+            super.onBackPressed();
+        }
+    }
 }

@@ -41,9 +41,9 @@ import com.google.android.exoplayer2.trackselection.AdaptiveVideoTrackSelection;
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
 import com.google.android.exoplayer2.trackselection.MappingTrackSelector;
 import com.google.android.exoplayer2.trackselection.TrackSelection;
-import com.google.android.exoplayer2.trackselection.TrackSelections;
-import com.google.android.exoplayer2.trackselection.TrackSelector;
+import com.google.android.exoplayer2.trackselection.TrackSelectionArray;
 import com.google.android.exoplayer2.ui.PlaybackControlView;
+import com.google.android.exoplayer2.ui.SimpleExoPlayerView;
 import com.google.android.exoplayer2.upstream.DataSource;
 import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
 import com.google.android.exoplayer2.upstream.HttpDataSource;
@@ -53,7 +53,6 @@ import com.yalin.freevideo.R;
 import com.yalin.freevideo.explore.data.MovieData;
 import com.yalin.freevideo.ui.widget.dragview.DraggableListener;
 import com.yalin.freevideo.ui.widget.dragview.DraggableView;
-import com.yalin.freevideo.ui.widget.player.ExoPlayerView;
 import com.yalin.freevideo.util.EventLogger;
 
 import java.net.CookieHandler;
@@ -69,7 +68,6 @@ import java.util.UUID;
 
 public class VideoPlayerFragment extends Fragment implements View.OnClickListener,
         ExoPlayer.EventListener,
-        TrackSelector.EventListener<MappingTrackSelector.MappedTrackInfo>,
         PlaybackControlView.VisibilityListener {
 
     private static final DefaultBandwidthMeter BANDWIDTH_METER = new DefaultBandwidthMeter();
@@ -87,7 +85,7 @@ public class VideoPlayerFragment extends Fragment implements View.OnClickListene
     private Handler mMainHandler;
     private Timeline.Window mWindow;
     private EventLogger mEventLogger;
-    private ExoPlayerView mSimpleExoPlayerView;
+    private SimpleExoPlayerView mSimpleExoPlayerView;
 
     private DataSource.Factory mMediaDataSourceFactory;
     private SimpleExoPlayer mPlayer;
@@ -147,7 +145,6 @@ public class VideoPlayerFragment extends Fragment implements View.OnClickListene
         if (!isVisible()) {
             getFragmentManager().beginTransaction()
                     .show(this)
-                    .addToBackStack(null)
                     .commit();
         }
         mDraggableView.maximize();
@@ -157,6 +154,14 @@ public class VideoPlayerFragment extends Fragment implements View.OnClickListene
         mCurrentPlayData = movieData;
         releasePlayer();
         initializePlayer();
+    }
+
+    public boolean handleBackPress() {
+        if (isVisible()) {
+            hideSelf();
+            return true;
+        }
+        return false;
     }
 
     private DraggableListener mDraggableListener = new DraggableListener() {
@@ -197,7 +202,7 @@ public class VideoPlayerFragment extends Fragment implements View.OnClickListene
             CookieHandler.setDefault(DEFAULT_COOKIE_MANAGER);
         }
 
-        mSimpleExoPlayerView = (ExoPlayerView) root.findViewById(R.id.player_view);
+        mSimpleExoPlayerView = (SimpleExoPlayerView) root.findViewById(R.id.player_view);
         mSimpleExoPlayerView.setControllerVisibilityListener(this);
         mSimpleExoPlayerView.requestFocus();
     }
@@ -207,22 +212,22 @@ public class VideoPlayerFragment extends Fragment implements View.OnClickListene
             return;
         }
         if (mPlayer == null) {
-            boolean preferExtensionDecoders = true;
             DrmSessionManager<FrameworkMediaCrypto> drmSessionManager = null;
 
-            mEventLogger = new EventLogger();
             TrackSelection.Factory videoTrackSelectionFactory =
                     new AdaptiveVideoTrackSelection.Factory(BANDWIDTH_METER);
-            mTrackSelector = new DefaultTrackSelector(mMainHandler, videoTrackSelectionFactory);
-            mTrackSelector.addListener(this);
-            mTrackSelector.addListener(mEventLogger);
+            mTrackSelector = new DefaultTrackSelector(videoTrackSelectionFactory);
             mPlayer = ExoPlayerFactory.newSimpleInstance(getActivity(), mTrackSelector, new DefaultLoadControl(),
-                    drmSessionManager, preferExtensionDecoders);
+                    drmSessionManager);
             mPlayer.addListener(this);
+
+            mEventLogger = new EventLogger(mTrackSelector);
             mPlayer.addListener(mEventLogger);
+
             mPlayer.setAudioDebugListener(mEventLogger);
             mPlayer.setVideoDebugListener(mEventLogger);
             mPlayer.setId3Output(mEventLogger);
+
             mSimpleExoPlayerView.setPlayer(mPlayer);
             if (mIsTimelineStatic) {
                 if (mPlayerPosition == C.TIME_UNSET) {
@@ -317,14 +322,13 @@ public class VideoPlayerFragment extends Fragment implements View.OnClickListene
             return;
         }
 
-        TrackSelections<MappingTrackSelector.MappedTrackInfo> trackSelections = mTrackSelector.getCurrentSelections();
-        if (trackSelections == null) {
+        MappingTrackSelector.MappedTrackInfo mappedTrackInfo = mTrackSelector.getCurrentMappedTrackInfo();
+        if (mappedTrackInfo == null) {
             return;
         }
 
-        int rendererCount = trackSelections.length;
-        for (int i = 0; i < rendererCount; i++) {
-            TrackGroupArray trackGroups = trackSelections.info.getTrackGroups(i);
+        for (int i = 0; i < mappedTrackInfo.length; i++) {
+            TrackGroupArray trackGroups = mappedTrackInfo.getTrackGroups(i);
             if (trackGroups.length != 0) {
                 Button button = new Button(getActivity());
                 int label;
@@ -390,6 +394,22 @@ public class VideoPlayerFragment extends Fragment implements View.OnClickListene
     }
 
     @Override
+    public void onTracksChanged(TrackGroupArray trackGroups, TrackSelectionArray trackSelections) {
+        updateButtonVisibilities();
+        MappingTrackSelector.MappedTrackInfo mappedTrackInfo = mTrackSelector.getCurrentMappedTrackInfo();
+        if (mappedTrackInfo != null) {
+            if (mappedTrackInfo.getTrackTypeRendererSupport(C.TRACK_TYPE_VIDEO)
+                    == MappingTrackSelector.MappedTrackInfo.RENDERER_SUPPORT_UNSUPPORTED_TRACKS) {
+                showToast(R.string.error_unsupported_video);
+            }
+            if (mappedTrackInfo.getTrackTypeRendererSupport(C.TRACK_TYPE_AUDIO)
+                    == MappingTrackSelector.MappedTrackInfo.RENDERER_SUPPORT_UNSUPPORTED_TRACKS) {
+                showToast(R.string.error_unsupported_audio);
+            }
+        }
+    }
+
+    @Override
     public void onPlayerError(ExoPlaybackException e) {
         String errorString = null;
         if (e.type == ExoPlaybackException.TYPE_RENDERER) {
@@ -425,18 +445,6 @@ public class VideoPlayerFragment extends Fragment implements View.OnClickListene
     @Override
     public void onPositionDiscontinuity() {
 
-    }
-
-    @Override
-    public void onTrackSelectionsChanged(TrackSelections<? extends MappingTrackSelector.MappedTrackInfo> trackSelections) {
-        updateButtonVisibilities();
-        MappingTrackSelector.MappedTrackInfo trackInfo = trackSelections.info;
-        if (trackInfo.hasOnlyUnplayableTracks(C.TRACK_TYPE_VIDEO)) {
-            showToast(R.string.error_unsupported_video);
-        }
-        if (trackInfo.hasOnlyUnplayableTracks(C.TRACK_TYPE_AUDIO)) {
-            showToast(R.string.error_unsupported_audio);
-        }
     }
 
     @Override

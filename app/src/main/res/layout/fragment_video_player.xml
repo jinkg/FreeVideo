@@ -41,7 +41,7 @@
         app:cardCornerRadius="@dimen/movie_card_corner_radius"
         app:cardElevation="@dimen/video_player_card_elevation">
 
-        <com.yalin.freevideo.ui.widget.player.ExoPlayerView
+        <com.google.android.exoplayer2.ui.SimpleExoPlayerView
             android:id="@id/player_view"
             android:layout_width="match_parent"
             android:layout_height="match_parent"

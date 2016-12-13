@@ -14,6 +14,16 @@ allprojects {
     repositories {
         jcenter()
     }
+    project.ext {
+        compileSdkVersion=24
+        targetSdkVersion=24
+        buildToolsVersion='24.0.2'
+        releaseRepoName = 'exoplayer'
+        releaseUserOrg = 'google'
+        releaseGroupId = 'com.google.android.exoplayer'
+        releaseVersion = 'r2.0.4'
+        releaseWebsite = 'https://github.com/google/ExoPlayer'
+    }
 }
 
 task clean(type: Delete) {

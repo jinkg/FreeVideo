@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
+import android.view.KeyEvent;
 import android.view.View;
 import android.widget.Button;
 import android.widget.LinearLayout;
@@ -42,8 +43,7 @@ import com.google.android.exoplayer2.trackselection.AdaptiveVideoTrackSelection;
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
 import com.google.android.exoplayer2.trackselection.MappingTrackSelector;
 import com.google.android.exoplayer2.trackselection.TrackSelection;
-import com.google.android.exoplayer2.trackselection.TrackSelections;
-import com.google.android.exoplayer2.trackselection.TrackSelector;
+import com.google.android.exoplayer2.trackselection.TrackSelectionArray;
 import com.google.android.exoplayer2.ui.DebugTextViewHelper;
 import com.google.android.exoplayer2.ui.PlaybackControlView;
 import com.google.android.exoplayer2.ui.SimpleExoPlayerView;
@@ -69,14 +69,20 @@ import java.util.UUID;
  */
 
 public class PlayerActivity extends AppCompatActivity implements View.OnClickListener, ExoPlayer.EventListener,
-        TrackSelector.EventListener<MappingTrackSelector.MappedTrackInfo>, PlaybackControlView.VisibilityListener {
+        PlaybackControlView.VisibilityListener {
+
     public static final String DRM_SCHEME_UUID_EXTRA = "drm_scheme_uuid";
     public static final String DRM_LICENSE_URL = "drm_license_url";
     public static final String DRM_KEY_REQUEST_PROPERTIES = "drm_key_request_properties";
     public static final String PREFER_EXTENSION_DECODERS = "prefer_extension_decoders";
 
-    public static final String ACTION_VIEW = "com.yalin.freevideo.action.VIEW";
+    public static final String ACTION_VIEW = "com.google.android.exoplayer.demo.action.VIEW";
     public static final String EXTENSION_EXTRA = "extension";
+
+    public static final String ACTION_VIEW_LIST =
+            "com.google.android.exoplayer.demo.action.VIEW_LIST";
+    public static final String URI_LIST_EXTRA = "uri_list";
+    public static final String EXTENSION_LIST_EXTRA = "extension_list";
 
     private static final DefaultBandwidthMeter BANDWIDTH_METER = new DefaultBandwidthMeter();
     private static final CookieManager DEFAULT_COOKIE_MANAGER;
@@ -96,7 +102,7 @@ public class PlayerActivity extends AppCompatActivity implements View.OnClickLis
 
     private DataSource.Factory mediaDataSourceFactory;
     private SimpleExoPlayer player;
-    private MappingTrackSelector trackSelector;
+    private DefaultTrackSelector trackSelector;
     private TrackSelectionHelper trackSelectionHelper;
     private DebugTextViewHelper debugViewHelper;
     private boolean playerNeedsSource;
@@ -105,6 +111,8 @@ public class PlayerActivity extends AppCompatActivity implements View.OnClickLis
     private boolean isTimelineStatic;
     private int playerWindow;
     private long playerPosition;
+
+    // Activity lifecycle
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -180,20 +188,39 @@ public class PlayerActivity extends AppCompatActivity implements View.OnClickLis
         }
     }
 
+    // Activity input
+
+    @Override
+    public boolean dispatchKeyEvent(KeyEvent event) {
+        // Show the controls on any key event.
+        simpleExoPlayerView.showController();
+        // If the event was not handled then see if the player view can handle it as a media key event.
+        return super.dispatchKeyEvent(event) || simpleExoPlayerView.dispatchMediaKeyEvent(event);
+    }
+
+    // OnClickListener methods
+
     @Override
     public void onClick(View view) {
         if (view == retryButton) {
             initializePlayer();
         } else if (view.getParent() == debugRootView) {
-            trackSelectionHelper.showSelectionDialog(this, ((Button) view).getText(),
-                    trackSelector.getCurrentSelections().info, (int) view.getTag());
+            MappingTrackSelector.MappedTrackInfo mappedTrackInfo = trackSelector.getCurrentMappedTrackInfo();
+            if (mappedTrackInfo != null) {
+                trackSelectionHelper.showSelectionDialog(this, ((Button) view).getText(),
+                        trackSelector.getCurrentMappedTrackInfo(), (int) view.getTag());
+            }
         }
     }
+
+    // PlaybackControlView.VisibilityListener implementation
 
     @Override
     public void onVisibilityChange(int visibility) {
         debugRootView.setVisibility(visibility);
     }
+
+    // Internal methods
 
     private void initializePlayer() {
         Intent intent = getIntent();
@@ -227,20 +254,25 @@ public class PlayerActivity extends AppCompatActivity implements View.OnClickLis
                 }
             }
 
-            eventLogger = new EventLogger();
+            @SimpleExoPlayer.ExtensionRendererMode int extensionRendererMode =
+                    ((AppApplication) getApplication()).useExtensionRenderers()
+                            ? (preferExtensionDecoders ? SimpleExoPlayer.EXTENSION_RENDERER_MODE_PREFER
+                            : SimpleExoPlayer.EXTENSION_RENDERER_MODE_ON)
+                            : SimpleExoPlayer.EXTENSION_RENDERER_MODE_OFF;
             TrackSelection.Factory videoTrackSelectionFactory =
                     new AdaptiveVideoTrackSelection.Factory(BANDWIDTH_METER);
-            trackSelector = new DefaultTrackSelector(mainHandler, videoTrackSelectionFactory);
-            trackSelector.addListener(this);
-            trackSelector.addListener(eventLogger);
+            trackSelector = new DefaultTrackSelector(videoTrackSelectionFactory);
             trackSelectionHelper = new TrackSelectionHelper(trackSelector, videoTrackSelectionFactory);
             player = ExoPlayerFactory.newSimpleInstance(this, trackSelector, new DefaultLoadControl(),
-                    drmSessionManager, preferExtensionDecoders);
+                    drmSessionManager, extensionRendererMode);
             player.addListener(this);
+
+            eventLogger = new EventLogger(trackSelector);
             player.addListener(eventLogger);
             player.setAudioDebugListener(eventLogger);
             player.setVideoDebugListener(eventLogger);
             player.setId3Output(eventLogger);
+
             simpleExoPlayerView.setPlayer(player);
             if (isTimelineStatic) {
                 if (playerPosition == C.TIME_UNSET) {
@@ -261,6 +293,16 @@ public class PlayerActivity extends AppCompatActivity implements View.OnClickLis
             if (ACTION_VIEW.equals(action)) {
                 uris = new Uri[]{intent.getData()};
                 extensions = new String[]{intent.getStringExtra(EXTENSION_EXTRA)};
+            } else if (ACTION_VIEW_LIST.equals(action)) {
+                String[] uriStrings = intent.getStringArrayExtra(URI_LIST_EXTRA);
+                uris = new Uri[uriStrings.length];
+                for (int i = 0; i < uriStrings.length; i++) {
+                    uris[i] = Uri.parse(uriStrings[i]);
+                }
+                extensions = intent.getStringArrayExtra(EXTENSION_LIST_EXTRA);
+                if (extensions == null) {
+                    extensions = new String[uriStrings.length];
+                }
             } else {
                 showToast(getString(R.string.unexpected_intent_action, action));
                 return;
@@ -321,7 +363,7 @@ public class PlayerActivity extends AppCompatActivity implements View.OnClickLis
             playerWindow = player.getCurrentWindowIndex();
             playerPosition = C.TIME_UNSET;
             Timeline timeline = player.getCurrentTimeline();
-            if (timeline != null && timeline.getWindow(playerWindow, window).isSeekable) {
+            if (!timeline.isEmpty() && timeline.getWindow(playerWindow, window).isSeekable) {
                 playerPosition = player.getCurrentPosition();
             }
             player.release();
@@ -332,19 +374,35 @@ public class PlayerActivity extends AppCompatActivity implements View.OnClickLis
         }
     }
 
+    /**
+     * Returns a new DataSource factory.
+     *
+     * @param useBandwidthMeter Whether to set {@link #BANDWIDTH_METER} as a listener to the new
+     *                          DataSource factory.
+     * @return A new DataSource factory.
+     */
     private DataSource.Factory buildDataSourceFactory(boolean useBandwidthMeter) {
         return ((AppApplication) getApplication())
                 .buildDataSourceFactory(useBandwidthMeter ? BANDWIDTH_METER : null);
     }
 
+    /**
+     * Returns a new HttpDataSource factory.
+     *
+     * @param useBandwidthMeter Whether to set {@link #BANDWIDTH_METER} as a listener to the new
+     *                          DataSource factory.
+     * @return A new HttpDataSource factory.
+     */
     private HttpDataSource.Factory buildHttpDataSourceFactory(boolean useBandwidthMeter) {
         return ((AppApplication) getApplication())
                 .buildHttpDataSourceFactory(useBandwidthMeter ? BANDWIDTH_METER : null);
     }
 
+    // ExoPlayer.EventListener implementation
+
     @Override
     public void onLoadingChanged(boolean isLoading) {
-
+        // Do nothing.
     }
 
     @Override
@@ -356,8 +414,13 @@ public class PlayerActivity extends AppCompatActivity implements View.OnClickLis
     }
 
     @Override
+    public void onPositionDiscontinuity() {
+        // Do nothing.
+    }
+
+    @Override
     public void onTimelineChanged(Timeline timeline, Object manifest) {
-        isTimelineStatic = timeline != null && timeline.getWindowCount() > 0
+        isTimelineStatic = !timeline.isEmpty()
                 && !timeline.getWindow(timeline.getWindowCount() - 1, window).isDynamic;
     }
 
@@ -395,21 +458,22 @@ public class PlayerActivity extends AppCompatActivity implements View.OnClickLis
     }
 
     @Override
-    public void onPositionDiscontinuity() {
-
-    }
-
-    @Override
-    public void onTrackSelectionsChanged(TrackSelections<? extends MappingTrackSelector.MappedTrackInfo> trackSelections) {
+    public void onTracksChanged(TrackGroupArray trackGroups, TrackSelectionArray trackSelections) {
         updateButtonVisibilities();
-        MappingTrackSelector.MappedTrackInfo trackInfo = trackSelections.info;
-        if (trackInfo.hasOnlyUnplayableTracks(C.TRACK_TYPE_VIDEO)) {
-            showToast(R.string.error_unsupported_video);
-        }
-        if (trackInfo.hasOnlyUnplayableTracks(C.TRACK_TYPE_AUDIO)) {
-            showToast(R.string.error_unsupported_audio);
+        MappingTrackSelector.MappedTrackInfo mappedTrackInfo = trackSelector.getCurrentMappedTrackInfo();
+        if (mappedTrackInfo != null) {
+            if (mappedTrackInfo.getTrackTypeRendererSupport(C.TRACK_TYPE_VIDEO)
+                    == MappingTrackSelector.MappedTrackInfo.RENDERER_SUPPORT_UNSUPPORTED_TRACKS) {
+                showToast(R.string.error_unsupported_video);
+            }
+            if (mappedTrackInfo.getTrackTypeRendererSupport(C.TRACK_TYPE_AUDIO)
+                    == MappingTrackSelector.MappedTrackInfo.RENDERER_SUPPORT_UNSUPPORTED_TRACKS) {
+                showToast(R.string.error_unsupported_audio);
+            }
         }
     }
+
+    // User controls
 
     private void updateButtonVisibilities() {
         debugRootView.removeAllViews();
@@ -421,14 +485,13 @@ public class PlayerActivity extends AppCompatActivity implements View.OnClickLis
             return;
         }
 
-        TrackSelections<MappingTrackSelector.MappedTrackInfo> trackSelections = trackSelector.getCurrentSelections();
-        if (trackSelections == null) {
+        MappingTrackSelector.MappedTrackInfo mappedTrackInfo = trackSelector.getCurrentMappedTrackInfo();
+        if (mappedTrackInfo == null) {
             return;
         }
 
-        int rendererCount = trackSelections.length;
-        for (int i = 0; i < rendererCount; i++) {
-            TrackGroupArray trackGroups = trackSelections.info.getTrackGroups(i);
+        for (int i = 0; i < mappedTrackInfo.length; i++) {
+            TrackGroupArray trackGroups = mappedTrackInfo.getTrackGroups(i);
             if (trackGroups.length != 0) {
                 Button button = new Button(this);
                 int label;

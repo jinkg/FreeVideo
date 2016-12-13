@@ -12,8 +12,10 @@ import com.google.android.exoplayer2.Timeline;
 import com.google.android.exoplayer2.audio.AudioRendererEventListener;
 import com.google.android.exoplayer2.decoder.DecoderCounters;
 import com.google.android.exoplayer2.drm.StreamingDrmSessionManager;
+import com.google.android.exoplayer2.metadata.Metadata;
 import com.google.android.exoplayer2.metadata.MetadataRenderer;
 import com.google.android.exoplayer2.metadata.id3.ApicFrame;
+import com.google.android.exoplayer2.metadata.id3.CommentFrame;
 import com.google.android.exoplayer2.metadata.id3.GeobFrame;
 import com.google.android.exoplayer2.metadata.id3.Id3Frame;
 import com.google.android.exoplayer2.metadata.id3.PrivFrame;
@@ -25,14 +27,12 @@ import com.google.android.exoplayer2.source.TrackGroup;
 import com.google.android.exoplayer2.source.TrackGroupArray;
 import com.google.android.exoplayer2.trackselection.MappingTrackSelector;
 import com.google.android.exoplayer2.trackselection.TrackSelection;
-import com.google.android.exoplayer2.trackselection.TrackSelections;
-import com.google.android.exoplayer2.trackselection.TrackSelector;
+import com.google.android.exoplayer2.trackselection.TrackSelectionArray;
 import com.google.android.exoplayer2.upstream.DataSpec;
 import com.google.android.exoplayer2.video.VideoRendererEventListener;
 
 import java.io.IOException;
 import java.text.NumberFormat;
-import java.util.List;
 import java.util.Locale;
 
 /**
@@ -43,12 +43,11 @@ import java.util.Locale;
 public final class EventLogger implements ExoPlayer.EventListener,
         AudioRendererEventListener, VideoRendererEventListener, AdaptiveMediaSourceEventListener,
         ExtractorMediaSource.EventListener, StreamingDrmSessionManager.EventListener,
-        TrackSelector.EventListener<MappingTrackSelector.MappedTrackInfo>, MetadataRenderer.Output<List<Id3Frame>> {
+        MetadataRenderer.Output {
 
-    private static final String TAG = "EventLogUtilger";
+    private static final String TAG = "EventLogger";
     private static final int MAX_TIMELINE_ITEM_LINES = 3;
     private static final NumberFormat TIME_FORMAT;
-
     static {
         TIME_FORMAT = NumberFormat.getInstance(Locale.US);
         TIME_FORMAT.setMinimumFractionDigits(2);
@@ -56,11 +55,13 @@ public final class EventLogger implements ExoPlayer.EventListener,
         TIME_FORMAT.setGroupingUsed(false);
     }
 
+    private final MappingTrackSelector trackSelector;
     private final Timeline.Window window;
     private final Timeline.Period period;
     private final long startTimeMs;
 
-    public EventLogger() {
+    public EventLogger(MappingTrackSelector trackSelector) {
+        this.trackSelector = trackSelector;
         window = new Timeline.Window();
         period = new Timeline.Period();
         startTimeMs = SystemClock.elapsedRealtime();
@@ -94,14 +95,14 @@ public final class EventLogger implements ExoPlayer.EventListener,
         LogUtil.d(TAG, "sourceInfo [periodCount=" + periodCount + ", windowCount=" + windowCount);
         for (int i = 0; i < Math.min(periodCount, MAX_TIMELINE_ITEM_LINES); i++) {
             timeline.getPeriod(i, period);
-            LogUtil.d(TAG, "  " + "period [" + getTimeString(period.getDurationMs()) + "]");
+            LogUtil.d(TAG, "  " +  "period [" + getTimeString(period.getDurationMs()) + "]");
         }
         if (periodCount > MAX_TIMELINE_ITEM_LINES) {
             LogUtil.d(TAG, "  ...");
         }
         for (int i = 0; i < Math.min(windowCount, MAX_TIMELINE_ITEM_LINES); i++) {
             timeline.getWindow(i, window);
-            LogUtil.d(TAG, "  " + "window [" + getTimeString(window.getDurationMs()) + ", "
+            LogUtil.d(TAG, "  " +  "window [" + getTimeString(window.getDurationMs()) + ", "
                     + window.isSeekable + ", " + window.isDynamic + "]");
         }
         if (windowCount > MAX_TIMELINE_ITEM_LINES) {
@@ -115,43 +116,57 @@ public final class EventLogger implements ExoPlayer.EventListener,
         LogUtil.e(TAG, "playerFailed [" + getSessionTimeString() + "]", e);
     }
 
-    // MappingTrackSelector.EventListener
-
     @Override
-    public void onTrackSelectionsChanged(TrackSelections<? extends MappingTrackSelector.MappedTrackInfo> trackSelections) {
+    public void onTracksChanged(TrackGroupArray ignored, TrackSelectionArray trackSelections) {
+        MappingTrackSelector.MappedTrackInfo mappedTrackInfo = trackSelector.getCurrentMappedTrackInfo();
+        if (mappedTrackInfo == null) {
+            LogUtil.d(TAG, "Tracks []");
+            return;
+        }
         LogUtil.d(TAG, "Tracks [");
         // LogUtil tracks associated to renderers.
-        MappingTrackSelector.MappedTrackInfo info = trackSelections.info;
-        for (int rendererIndex = 0; rendererIndex < trackSelections.length; rendererIndex++) {
-            TrackGroupArray trackGroups = info.getTrackGroups(rendererIndex);
+        for (int rendererIndex = 0; rendererIndex < mappedTrackInfo.length; rendererIndex++) {
+            TrackGroupArray rendererTrackGroups = mappedTrackInfo.getTrackGroups(rendererIndex);
             TrackSelection trackSelection = trackSelections.get(rendererIndex);
-            if (trackGroups.length > 0) {
+            if (rendererTrackGroups.length > 0) {
                 LogUtil.d(TAG, "  Renderer:" + rendererIndex + " [");
-                for (int groupIndex = 0; groupIndex < trackGroups.length; groupIndex++) {
-                    TrackGroup trackGroup = trackGroups.get(groupIndex);
-                    String adaptiveSupport = getAdaptiveSupportString(
-                            trackGroup.length, info.getAdaptiveSupport(rendererIndex, groupIndex, false));
+                for (int groupIndex = 0; groupIndex < rendererTrackGroups.length; groupIndex++) {
+                    TrackGroup trackGroup = rendererTrackGroups.get(groupIndex);
+                    String adaptiveSupport = getAdaptiveSupportString(trackGroup.length,
+                            mappedTrackInfo.getAdaptiveSupport(rendererIndex, groupIndex, false));
                     LogUtil.d(TAG, "    Group:" + groupIndex + ", adaptive_supported=" + adaptiveSupport + " [");
                     for (int trackIndex = 0; trackIndex < trackGroup.length; trackIndex++) {
                         String status = getTrackStatusString(trackSelection, trackGroup, trackIndex);
                         String formatSupport = getFormatSupportString(
-                                info.getTrackFormatSupport(rendererIndex, groupIndex, trackIndex));
+                                mappedTrackInfo.getTrackFormatSupport(rendererIndex, groupIndex, trackIndex));
                         LogUtil.d(TAG, "      " + status + " Track:" + trackIndex + ", "
                                 + getFormatString(trackGroup.getFormat(trackIndex))
                                 + ", supported=" + formatSupport);
                     }
                     LogUtil.d(TAG, "    ]");
                 }
+                // Log metadata for at most one of the tracks selected for the renderer.
+                if (trackSelection != null) {
+                    for (int selectionIndex = 0; selectionIndex < trackSelection.length(); selectionIndex++) {
+                        Metadata metadata = trackSelection.getFormat(selectionIndex).metadata;
+                        if (metadata != null) {
+                            LogUtil.d(TAG, "    Metadata [");
+                            printMetadata(metadata, "      ");
+                            LogUtil.d(TAG, "    ]");
+                            break;
+                        }
+                    }
+                }
                 LogUtil.d(TAG, "  ]");
             }
         }
-        // LogUtil tracks not associated with a renderer.
-        TrackGroupArray trackGroups = info.getUnassociatedTrackGroups();
-        if (trackGroups.length > 0) {
+        // Log tracks not associated with a renderer.
+        TrackGroupArray unassociatedTrackGroups = mappedTrackInfo.getUnassociatedTrackGroups();
+        if (unassociatedTrackGroups.length > 0) {
             LogUtil.d(TAG, "  Renderer:None [");
-            for (int groupIndex = 0; groupIndex < trackGroups.length; groupIndex++) {
+            for (int groupIndex = 0; groupIndex < unassociatedTrackGroups.length; groupIndex++) {
                 LogUtil.d(TAG, "    Group:" + groupIndex + " [");
-                TrackGroup trackGroup = trackGroups.get(groupIndex);
+                TrackGroup trackGroup = unassociatedTrackGroups.get(groupIndex);
                 for (int trackIndex = 0; trackIndex < trackGroup.length; trackIndex++) {
                     String status = getTrackStatusString(false);
                     String formatSupport = getFormatSupportString(
@@ -167,34 +182,13 @@ public final class EventLogger implements ExoPlayer.EventListener,
         LogUtil.d(TAG, "]");
     }
 
-    // MetadataRenderer.Output<List<Id3Frame>>
+    // MetadataRenderer.Output
 
     @Override
-    public void onMetadata(List<Id3Frame> id3Frames) {
-        for (Id3Frame id3Frame : id3Frames) {
-            if (id3Frame instanceof TxxxFrame) {
-                TxxxFrame txxxFrame = (TxxxFrame) id3Frame;
-                LogUtil.d(TAG, String.format("ID3 TimedMetadata %s: description=%s, value=%s", txxxFrame.id,
-                        txxxFrame.description, txxxFrame.value));
-            } else if (id3Frame instanceof PrivFrame) {
-                PrivFrame privFrame = (PrivFrame) id3Frame;
-                LogUtil.d(TAG, String.format("ID3 TimedMetadata %s: owner=%s", privFrame.id, privFrame.owner));
-            } else if (id3Frame instanceof GeobFrame) {
-                GeobFrame geobFrame = (GeobFrame) id3Frame;
-                LogUtil.d(TAG, String.format("ID3 TimedMetadata %s: mimeType=%s, filename=%s, description=%s",
-                        geobFrame.id, geobFrame.mimeType, geobFrame.filename, geobFrame.description));
-            } else if (id3Frame instanceof ApicFrame) {
-                ApicFrame apicFrame = (ApicFrame) id3Frame;
-                LogUtil.d(TAG, String.format("ID3 TimedMetadata %s: mimeType=%s, description=%s",
-                        apicFrame.id, apicFrame.mimeType, apicFrame.description));
-            } else if (id3Frame instanceof TextInformationFrame) {
-                TextInformationFrame textInformationFrame = (TextInformationFrame) id3Frame;
-                LogUtil.d(TAG, String.format("ID3 TimedMetadata %s: description=%s", textInformationFrame.id,
-                        textInformationFrame.description));
-            } else {
-                LogUtil.d(TAG, String.format("ID3 TimedMetadata %s", id3Frame.id));
-            }
-        }
+    public void onMetadata(Metadata metadata) {
+        LogUtil.d(TAG, "onMetadata [");
+        printMetadata(metadata, "  ");
+        LogUtil.d(TAG, "]");
     }
 
     // AudioRendererEventListener
@@ -337,6 +331,39 @@ public final class EventLogger implements ExoPlayer.EventListener,
 
     private void printInternalError(String type, Exception e) {
         LogUtil.e(TAG, "internalError [" + getSessionTimeString() + ", " + type + "]", e);
+    }
+
+    private void printMetadata(Metadata metadata, String prefix) {
+        for (int i = 0; i < metadata.length(); i++) {
+            Metadata.Entry entry = metadata.get(i);
+            if (entry instanceof TxxxFrame) {
+                TxxxFrame txxxFrame = (TxxxFrame) entry;
+                LogUtil.d(TAG, prefix + String.format("%s: description=%s, value=%s", txxxFrame.id,
+                        txxxFrame.description, txxxFrame.value));
+            } else if (entry instanceof PrivFrame) {
+                PrivFrame privFrame = (PrivFrame) entry;
+                LogUtil.d(TAG, prefix + String.format("%s: owner=%s", privFrame.id, privFrame.owner));
+            } else if (entry instanceof GeobFrame) {
+                GeobFrame geobFrame = (GeobFrame) entry;
+                LogUtil.d(TAG, prefix + String.format("%s: mimeType=%s, filename=%s, description=%s",
+                        geobFrame.id, geobFrame.mimeType, geobFrame.filename, geobFrame.description));
+            } else if (entry instanceof ApicFrame) {
+                ApicFrame apicFrame = (ApicFrame) entry;
+                LogUtil.d(TAG, prefix + String.format("%s: mimeType=%s, description=%s",
+                        apicFrame.id, apicFrame.mimeType, apicFrame.description));
+            } else if (entry instanceof TextInformationFrame) {
+                TextInformationFrame textInformationFrame = (TextInformationFrame) entry;
+                LogUtil.d(TAG, prefix + String.format("%s: description=%s", textInformationFrame.id,
+                        textInformationFrame.description));
+            } else if (entry instanceof CommentFrame) {
+                CommentFrame commentFrame = (CommentFrame) entry;
+                LogUtil.d(TAG, prefix + String.format("%s: language=%s description=%s", commentFrame.id,
+                        commentFrame.language, commentFrame.description));
+            } else if (entry instanceof Id3Frame) {
+                Id3Frame id3Frame = (Id3Frame) entry;
+                LogUtil.d(TAG, prefix + String.format("%s", id3Frame.id));
+            }
+        }
     }
 
     private String getSessionTimeString() {
