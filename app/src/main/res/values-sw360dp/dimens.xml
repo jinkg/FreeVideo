@@ -2,4 +2,6 @@
 <resources>
     <dimen name="navdrawer_width">304dp</dimen>
     <dimen name="navdrawer_profile_image_size">64dp</dimen>
+
+    <dimen name="video_player_draggable_height">240dp</dimen>
 </resources>

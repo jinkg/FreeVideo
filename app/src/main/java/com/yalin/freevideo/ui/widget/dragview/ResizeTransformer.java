@@ -26,9 +26,9 @@ public class ResizeTransformer extends Transformer {
      */
     @Override
     public void updateScale(float verticalDragOffset) {
-        float offset = (float) (Math.round(verticalDragOffset * 1000) / 1000.0);
-        layoutParams.width = (int) (getOriginalWidth() * (1 - offset / getXScaleFactor()));
-        layoutParams.height = (int) (getOriginalHeight() * (1 - offset / getYScaleFactor()));
+        verticalDragOffset = correctOffset(verticalDragOffset);
+        layoutParams.width = (int) (getOriginalWidth() * (1 - verticalDragOffset / getXScaleFactor()));
+        layoutParams.height = (int) (getOriginalHeight() * (1 - verticalDragOffset / getYScaleFactor()));
 
         getView().setLayoutParams(layoutParams);
     }
@@ -57,8 +57,7 @@ public class ResizeTransformer extends Transformer {
     @Override
     public boolean isViewAtRight() {
         int right = getView().getRight() + getMarginRight();
-        return (getParentView().getWidth() - 3 <= right)
-                && (right <= getParentView().getWidth() + 3);
+        return right == getParentView().getWidth();
     }
 
     /**
@@ -68,8 +67,7 @@ public class ResizeTransformer extends Transformer {
     @Override
     public boolean isViewAtBottom() {
         int bottom = getView().getBottom() + getMarginBottom();
-        return (bottom >= getParentView().getHeight() - 3)
-                && (bottom <= getParentView().getHeight() + 3);
+        return bottom == getParentView().getHeight();
     }
 
     /**
@@ -113,6 +111,14 @@ public class ResizeTransformer extends Transformer {
      */
 
     private int getViewRightPosition(float verticalDragOffset) {
-        return (int) ((getOriginalWidth()) - getMarginRight() * verticalDragOffset);
+        verticalDragOffset = correctOffset(verticalDragOffset);
+        return (int) ((getOriginalWidth() - getMarginRight() * verticalDragOffset));
+    }
+
+    private float correctOffset(float originOffset) {
+        if (originOffset > 0.999) {
+            originOffset = 1f;
+        }
+        return originOffset;
     }
 }

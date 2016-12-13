@@ -4,30 +4,38 @@
     android:id="@+id/draggable_view"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    app:bottom_view_id="@+id/iv_thumbnail"
-    app:enable_minimized_horizontal_alpha_effect="false"
-    app:top_view_height="200dp"
-    app:top_view_id="@+id/player_view"
-    app:top_view_margin_bottom="10dp"
-    app:top_view_margin_right="10dp"
-    app:top_view_resize="true"
-    app:top_view_x_scale_factor="2.3"
-    app:top_view_y_scale_factor="2.3">
+    app:bottomViewId="@+id/iv_thumbnail"
+    app:enableMinimizedHorizontalAlphaEffect="false"
+    app:topViewHeight="@dimen/video_player_draggable_height"
+    app:topViewId="@+id/player_card_view"
+    app:topViewMarginBottom="@dimen/spacing_normal"
+    app:topViewMarginRight="@dimen/spacing_normal"
+    app:topViewResize="true">
 
     <TextView
         android:id="@+id/iv_thumbnail"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_below="@+id/player_view"
+        android:layout_below="@+id/player_card_view"
         android:background="@android:color/white"
         android:focusable="true"
         android:text="是复赛地方哈斯的粉红色的i飞洒\n地方很死的速度放缓i\n撒地方很阿斯顿因为人请问驱蚊器华威桥" />
 
-    <com.yalin.freevideo.ui.widget.player.ExoPlayerView
-        android:id="@id/player_view"
+    <android.support.v7.widget.CardView
+        android:id="@+id/player_card_view"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@android:color/black"
-        android:focusable="true" />
+        app:cardBackgroundColor="@android:color/black"
+        app:cardCornerRadius="@dimen/movie_card_corner_radius"
+        app:cardElevation="@dimen/video_player_card_elevation">
+
+        <com.yalin.freevideo.ui.widget.player.ExoPlayerView
+            android:id="@id/player_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@android:color/black"
+            android:focusable="true" />
+    </android.support.v7.widget.CardView>
+
 
 </com.yalin.freevideo.ui.widget.dragview.DraggableView>

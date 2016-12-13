@@ -18,6 +18,7 @@
     <dimen name="movie_card_corner_radius">0dp</dimen>
     <dimen name="card_corner_radius">2dp</dimen>
     <dimen name="card_elevation">2dp</dimen>
+    <dimen name="video_player_card_elevation">4dp</dimen>
 
     <item name="aspect_16_9" format="float" type="dimen">1.7778</item>
     <item name="aspect_4_3" format="float" type="dimen">1.3333</item>
@@ -25,4 +26,6 @@
 
     <item name="body_1_spacing" format="float" type="dimen">1.22448979592</item>
     <item name="h3_spacing" format="float" type="dimen">1.14285714286</item>
+
+    <dimen name="video_player_draggable_height">200dp</dimen>
 </resources>
