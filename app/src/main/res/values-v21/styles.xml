@@ -16,6 +16,7 @@
 
     <style name="Theme.FreeVideo.Light" parent="Theme.FreeVideo.WithNavDrawer">
         <item name="colorPrimaryDark">@color/dark_status_bar</item>
+        <item name="android:statusBarColor">@color/immersive_status_bar</item>
     </style>
 
     <style name="Theme.FreeVideo.AlertDialog" parent="android:Theme.Material.Light.Dialog.Alert">

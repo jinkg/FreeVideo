@@ -34,4 +34,20 @@ public class UIUtils {
         }
         return ContextCompat.getColor(context, fallbackColorResId);
     }
+
+    public static int getActionBarSize(@NonNull Context context) {
+        TypedValue value = new TypedValue();
+        context.getTheme().resolveAttribute(android.R.attr.actionBarSize, value, true);
+        return TypedValue.complexToDimensionPixelSize(
+                value.data, context.getResources().getDisplayMetrics());
+    }
+
+    public static int getStatusBarSize(@NonNull Context context) {
+        int result = 0;
+        int resourceId = context.getResources().getIdentifier("status_bar_height", "dimen", "android");
+        if (resourceId > 0) {
+            result = context.getResources().getDimensionPixelSize(resourceId);
+        }
+        return result;
+    }
 }

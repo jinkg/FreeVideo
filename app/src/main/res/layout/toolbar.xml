@@ -6,7 +6,6 @@
     android:layout_width="match_parent"
     android:layout_height="?actionBarSize"
     android:background="?colorPrimary"
-    android:theme="@style/ActionBarThemeOverlay"
-    app:popupTheme="@style/ActionBarPopupThemeOverlay"
     app:contentInsetStart="?actionBarInsetStart"
-    app:layout_scrollFlags="scroll|enterAlways|snap" />
+    app:popupTheme="@style/ActionBarPopupThemeOverlay"
+    app:theme="@style/ActionBarThemeOverlay" />

@@ -11,6 +11,7 @@
     <color name="transparent">#00000000</color>
     <color name="background">#fff7f9f9</color>
     <color name="dark_status_bar">@color/theme_primary_dark</color>
+    <color name="immersive_status_bar">#33000000</color>
     <color name="light_grey">#ffeeeeee</color>
     <color name="lighter_gray">#ddd</color>
 

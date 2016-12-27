@@ -4,12 +4,15 @@ import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.view.ViewGroup;
 
 import com.yalin.freevideo.R;
 import com.yalin.freevideo.explore.data.MovieData;
 import com.yalin.freevideo.navigation.NavigationModel;
 import com.yalin.freevideo.player.VideoPlayerFragment;
 import com.yalin.freevideo.ui.BaseActivity;
+import com.yalin.freevideo.util.UIUtils;
 
 public class VideoExploreActivity extends BaseActivity implements Toolbar.OnMenuItemClickListener {
 
@@ -25,6 +28,16 @@ public class VideoExploreActivity extends BaseActivity implements Toolbar.OnMenu
         getFragmentManager().beginTransaction()
                 .hide(mVideoPlayerFragment)
                 .commit();
+
+        View drawer = findViewById(R.id.coordinator_layout);
+        drawer.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
+
+        View statusBarBackground = findViewById(R.id.status_bar_background);
+        ViewGroup.LayoutParams lpStatus = statusBarBackground.getLayoutParams();
+        lpStatus.height = UIUtils.getStatusBarSize(this);
+        statusBarBackground.setLayoutParams(lpStatus);
     }
 
     @Override

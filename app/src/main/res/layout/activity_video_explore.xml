@@ -5,7 +5,6 @@
     android:id="@+id/drawer_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fitsSystemWindows="true"
     tools:context="com.yalin.freevideo.explore.VideoExploreActivity">
 
     <FrameLayout
@@ -20,13 +19,24 @@
             <android.support.design.widget.AppBarLayout
                 android:id="@+id/appbar"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@color/background">
+                android:layout_height="wrap_content">
 
-                <include layout="@layout/toolbar_autohide" />
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    app:layout_scrollFlags="scroll|enterAlways|snap">
+
+                    <View
+                        android:id="@+id/status_bar_background"
+                        android:layout_width="match_parent"
+                        android:layout_height="0dp"
+                        android:background="@color/theme_primary" />
+
+                    <include layout="@layout/toolbar" />
+                </LinearLayout>
 
             </android.support.design.widget.AppBarLayout>
-
 
             <fragment
                 android:id="@+id/explore_video_frag"
@@ -34,7 +44,6 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 app:layout_behavior="@string/appbar_scrolling_view_behavior" />
-
 
         </android.support.design.widget.CoordinatorLayout>
 
